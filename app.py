@@ -83,9 +83,20 @@ def get_aurora_forecast():
         response.raise_for_status()  # Raise exception for bad status codes
         data = response.json()
         
+        print(f"NOAA API response structure: {type(data)}, length: {len(data) if isinstance(data, list) else 'N/A'}")
+        if len(data) > 0:
+            print(f"First item: {data[0]}")
+        
         # Get the most recent Kp index and predictions
         if len(data) > 1:
             latest = data[1]
+            print(f"Latest data: {latest}")
+            
+            # Check if latest is a list with at least 2 elements
+            if not isinstance(latest, list) or len(latest) < 2:
+                print(f"Invalid latest data format: {latest}")
+                raise ValueError("Invalid data format from NOAA API")
+            
             kp_index = float(latest[1])
             
             # Calculate aurora visibility probability for Banff
@@ -98,7 +109,7 @@ def get_aurora_forecast():
                 if i == 0:
                     continue  # Skip header
                 period = data[i]
-                if len(period) >= 2:
+                if isinstance(period, list) and len(period) >= 2:
                     try:
                         kp_val = float(period[1])
                         prob = min(100, (kp_val / 9) * 100)
@@ -131,7 +142,7 @@ def get_aurora_forecast():
                 "tonight_probability": best_prob if best_prob > 0 else visibility_probability,
                 "best_viewing_time": best_time if best_time else "Tonight (10 PM - 2 AM)",
                 "predictions": predictions[:4],
-                "timestamp": latest[0],
+                "timestamp": latest[0] if isinstance(latest, list) and len(latest) > 0 else datetime.now().isoformat(),
                 "status": "Active" if kp_index >= 4 else "Low Activity"
             }
     except requests.exceptions.RequestException as e:
