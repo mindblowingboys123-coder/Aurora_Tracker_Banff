@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from config import Config
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.config.from_object(Config)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
