@@ -80,6 +80,7 @@ def get_aurora_forecast():
         # NOAA Space Weather Prediction Center API
         url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
         response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise exception for bad status codes
         data = response.json()
         
         # Get the most recent Kp index and predictions
@@ -133,8 +134,12 @@ def get_aurora_forecast():
                 "timestamp": latest[0],
                 "status": "Active" if kp_index >= 4 else "Low Activity"
             }
+    except requests.exceptions.RequestException as e:
+        print(f"Network error fetching aurora data: {e}")
+    except ValueError as e:
+        print(f"JSON parsing error fetching aurora data: {e}")
     except Exception as e:
-        print(f"Error fetching aurora data: {e}")
+        print(f"Error fetching aurora data: {type(e).__name__}: {e}")
     
     return {
         "kp_index": 0,
