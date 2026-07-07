@@ -75,25 +75,62 @@ VIEWING_LOCATIONS = [
 ]
 
 def get_aurora_forecast():
-    """Get aurora forecast from NOAA"""
+    """Get aurora forecast from NOAA with time-based predictions"""
     try:
         # NOAA Space Weather Prediction Center API
         url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
         response = requests.get(url, timeout=10)
         data = response.json()
         
-        # Get the most recent Kp index
+        # Get the most recent Kp index and predictions
         if len(data) > 1:
             latest = data[1]
             kp_index = float(latest[1])
             
-            # Calculate aurora visibility probability
+            # Calculate aurora visibility probability for Banff
             # Kp index of 5+ is good for Banff (magnetic latitude ~55-60)
             visibility_probability = min(100, (kp_index / 9) * 100)
+            
+            # Get predictions for next 3 periods
+            predictions = []
+            for i in range(min(4, len(data))):
+                if i == 0:
+                    continue  # Skip header
+                period = data[i]
+                if len(period) >= 2:
+                    try:
+                        kp_val = float(period[1])
+                        prob = min(100, (kp_val / 9) * 100)
+                        predictions.append({
+                            "time": period[0],
+                            "kp_index": kp_val,
+                            "probability": prob
+                        })
+                    except:
+                        continue
+            
+            # Determine best viewing time tonight
+            current_hour = datetime.now().hour
+            best_time = None
+            best_prob = 0
+            
+            # Aurora is typically visible between 10 PM and 2 AM
+            for pred in predictions[:3]:  # Next 3 predictions
+                try:
+                    pred_hour = int(pred['time'].split(':')[0])
+                    if 22 <= pred_hour or pred_hour <= 2:
+                        if pred['probability'] > best_prob:
+                            best_prob = pred['probability']
+                            best_time = pred['time']
+                except:
+                    continue
             
             return {
                 "kp_index": kp_index,
                 "visibility_probability": visibility_probability,
+                "tonight_probability": best_prob,
+                "best_viewing_time": best_time,
+                "predictions": predictions[:4],
                 "timestamp": latest[0],
                 "status": "Active" if kp_index >= 4 else "Low Activity"
             }
@@ -103,6 +140,9 @@ def get_aurora_forecast():
     return {
         "kp_index": 0,
         "visibility_probability": 0,
+        "tonight_probability": 0,
+        "best_viewing_time": None,
+        "predictions": [],
         "timestamp": datetime.now().isoformat(),
         "status": "Unknown"
     }
@@ -203,7 +243,40 @@ def get_weather():
 
 @app.route('/api/locations')
 def get_locations():
-    return jsonify(VIEWING_LOCATIONS)
+    # Rank locations based on current conditions
+    ranked_locations = []
+    for loc in VIEWING_LOCATIONS:
+        # Calculate score based on rating, light pollution, and current conditions
+        score = loc['rating'] * 20
+        
+        # Light pollution penalty
+        if loc['light_pollution'] == 'Very Low':
+            score += 15
+        elif loc['light_pollution'] == 'Low':
+            score += 10
+        else:
+            score += 5
+        
+        # Current conditions factor
+        cloud_penalty = current_weather_data.get('cloud_coverage', 0) / 2
+        score -= cloud_penalty
+        
+        # Aurora activity bonus
+        aurora_bonus = current_aurora_data.get('visibility_probability', 0) / 5
+        score += aurora_bonus
+        
+        ranked_locations.append({
+            **loc,
+            'current_score': round(score, 1),
+            'conditions': {
+                'cloud_coverage': current_weather_data.get('cloud_coverage', 0),
+                'aurora_probability': current_aurora_data.get('visibility_probability', 0)
+            }
+        })
+    
+    # Sort by score descending
+    ranked_locations.sort(key=lambda x: x['current_score'], reverse=True)
+    return jsonify(ranked_locations)
 
 @socketio.on('connect')
 def handle_connect():
