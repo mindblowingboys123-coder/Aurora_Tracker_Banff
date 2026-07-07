@@ -110,26 +110,25 @@ def get_aurora_forecast():
                         continue
             
             # Determine best viewing time tonight
-            current_hour = datetime.now().hour
             best_time = None
             best_prob = 0
             
-            # Aurora is typically visible between 10 PM and 2 AM
+            # Use the highest probability from next 3 predictions
             for pred in predictions[:3]:  # Next 3 predictions
-                try:
-                    pred_hour = int(pred['time'].split(':')[0])
-                    if 22 <= pred_hour or pred_hour <= 2:
-                        if pred['probability'] > best_prob:
-                            best_prob = pred['probability']
-                            best_time = pred['time']
-                except:
-                    continue
+                if pred['probability'] > best_prob:
+                    best_prob = pred['probability']
+                    best_time = pred['time']
+            
+            # If no predictions available, use current probability
+            if best_prob == 0 and predictions:
+                best_prob = visibility_probability
+                best_time = "Tonight (10 PM - 2 AM)"
             
             return {
                 "kp_index": kp_index,
                 "visibility_probability": visibility_probability,
-                "tonight_probability": best_prob,
-                "best_viewing_time": best_time,
+                "tonight_probability": best_prob if best_prob > 0 else visibility_probability,
+                "best_viewing_time": best_time if best_time else "Tonight (10 PM - 2 AM)",
                 "predictions": predictions[:4],
                 "timestamp": latest[0],
                 "status": "Active" if kp_index >= 4 else "Low Activity"
