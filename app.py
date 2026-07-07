@@ -208,6 +208,10 @@ def get_locations():
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
+    # Fetch fresh data on connection
+    global current_aurora_data, current_weather_data
+    current_aurora_data = get_aurora_forecast()
+    current_weather_data = get_weather_data()
     emit('aurora_update', current_aurora_data)
     emit('weather_update', current_weather_data)
 
@@ -219,5 +223,6 @@ if __name__ == '__main__':
     # Start background monitoring thread
     monitor_thread = threading.Thread(target=background_monitor, daemon=True)
     monitor_thread.start()
+    
     port = int(os.environ.get('PORT', 5001))
     socketio.run(app, debug=False, host='0.0.0.0', port=port)
