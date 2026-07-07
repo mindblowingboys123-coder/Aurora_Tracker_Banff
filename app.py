@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 import requests
 import threading
 import time
+import os
 from datetime import datetime
 from config import Config
 
@@ -219,4 +220,5 @@ if __name__ == '__main__':
     monitor_thread = threading.Thread(target=background_monitor, daemon=True)
     monitor_thread.start()
     
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)
+    port = int(os.environ.get('PORT', 5001))
+    socketio.run(app, debug=False, host='0.0.0.0', port=port)
