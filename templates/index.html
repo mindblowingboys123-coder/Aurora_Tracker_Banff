@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Banff Aurora Tracker</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -15,219 +15,290 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            color: #e2e8f0;
+            background: #0a0a0f;
+            color: #e4e4e7;
             min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 3rem 2rem;
         }
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
-            padding: 2rem 0;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            margin-bottom: 4rem;
+            padding: 3rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
             font-weight: 700;
-            background: linear-gradient(90deg, #a5b4fc, #c4b5fd, #f9a8d4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
+            color: #f4f4f5;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
-            color: #94a3b8;
+            color: #71717a;
             font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
         }
 
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
         }
 
         .card {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
         .card-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
+            font-size: 1.5rem;
         }
 
         .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #f1f5f9;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .metric-value {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 700;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
+            color: #f4f4f5;
+            letter-spacing: -0.02em;
         }
 
         .metric-label {
-            color: #94a3b8;
-            font-size: 0.9rem;
+            color: #71717a;
+            font-size: 0.875rem;
+            font-weight: 400;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             font-size: 0.875rem;
             font-weight: 500;
-            margin-top: 0.5rem;
+            margin-top: 1rem;
         }
 
         .status-good {
-            background: rgba(34, 197, 94, 0.2);
+            background: rgba(34, 197, 94, 0.1);
             color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.2);
         }
 
         .status-warning {
-            background: rgba(234, 179, 8, 0.2);
+            background: rgba(234, 179, 8, 0.1);
             color: #fbbf24;
+            border: 1px solid rgba(234, 179, 8, 0.2);
         }
 
         .status-danger {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.1);
             color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
         .status-unknown {
-            background: rgba(148, 163, 184, 0.2);
-            color: #94a3b8;
+            background: rgba(113, 113, 122, 0.1);
+            color: #a1a1aa;
+            border: 1px solid rgba(113, 113, 122, 0.2);
+        }
+
+        .tonight-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .tonight-probability {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .best-time {
+            color: #a1a1aa;
+            font-size: 1rem;
+            margin-top: 0.5rem;
         }
 
         .locations-section {
-            margin-top: 3rem;
+            margin-top: 4rem;
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
             font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: #f1f5f9;
+            margin-bottom: 2rem;
+            color: #f4f4f5;
         }
 
         .locations-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2rem;
         }
 
         .location-card {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .location-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .location-card:hover::before {
+            opacity: 1;
         }
 
         .location-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .location-rank {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
         }
 
         .location-name {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #f1f5f9;
+            margin-bottom: 0.75rem;
+            color: #f4f4f5;
         }
 
         .location-description {
-            color: #94a3b8;
+            color: #a1a1aa;
             font-size: 0.95rem;
-            margin-bottom: 1rem;
-            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
         }
 
         .location-meta {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
 
         .meta-tag {
-            background: rgba(99, 102, 241, 0.2);
-            color: #a5b4fc;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+            padding: 0.375rem 0.875rem;
+            border-radius: 6px;
             font-size: 0.8rem;
             font-weight: 500;
+            border: 1px solid rgba(99, 102, 241, 0.2);
         }
 
         .location-directions {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 1rem;
-            border-radius: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.25rem;
+            border-radius: 8px;
             font-size: 0.9rem;
-            color: #cbd5e1;
-            line-height: 1.5;
+            color: #a1a1aa;
+            line-height: 1.6;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .directions-label {
             font-weight: 600;
-            color: #94a3b8;
-            margin-bottom: 0.25rem;
+            color: #71717a;
+            margin-bottom: 0.5rem;
             display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .notification-container {
             position: fixed;
-            top: 1rem;
-            right: 1rem;
+            top: 2rem;
+            right: 2rem;
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 1rem;
         }
 
         .notification {
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 0.75rem;
-            padding: 1rem 1.5rem;
-            max-width: 400px;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(24, 24, 27, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 420px;
+            animation: slideIn 0.4s ease-out;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
         .notification.warning {
@@ -251,31 +322,44 @@
 
         .last-updated {
             text-align: center;
-            color: #64748b;
+            color: #52525b;
             font-size: 0.875rem;
-            margin-top: 2rem;
+            margin-top: 4rem;
+            font-weight: 400;
         }
 
         .loading {
-            color: #94a3b8;
+            color: #71717a;
             font-style: italic;
         }
 
         .aurora-icon {
-            background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
         .cloud-icon {
-            background: linear-gradient(135deg, #60a5fa, #93c5fd);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 197, 253, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .temp-icon {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(251, 191, 36, 0.2));
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .time-icon {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.3);
         }
 
         @media (max-width: 768px) {
             h1 {
-                font-size: 1.75rem;
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 2rem 1.5rem;
             }
 
             .dashboard {
@@ -289,6 +373,7 @@
             .notification-container {
                 left: 1rem;
                 right: 1rem;
+                top: 1rem;
             }
         }
     </style>
@@ -296,20 +381,29 @@
 <body>
     <div class="container">
         <header>
-            <h1>🌌 Banff Aurora Tracker</h1>
+            <h1>Banff Aurora Tracker</h1>
             <p class="subtitle">Real-time aurora borealis monitoring for Banff National Park</p>
         </header>
 
         <div class="dashboard">
+            <div class="card tonight-card">
+                <div class="card-header">
+                    <div class="card-icon time-icon">🌙</div>
+                    <span class="card-title">Tonight's Probability</span>
+                </div>
+                <div class="metric-value tonight-probability" id="tonight-probability">--%</div>
+                <div class="best-time" id="best-viewing-time">Best viewing time: --</div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon aurora-icon">✨</div>
-                    <span class="card-title">Aurora Activity</span>
+                    <span class="card-title">Current Activity</span>
                 </div>
                 <div class="metric-value" id="kp-value">--</div>
                 <div class="metric-label">Kp Index</div>
                 <div id="aurora-status" class="status-badge status-unknown">Loading...</div>
-                <div class="metric-label" style="margin-top: 0.5rem;">Visibility: <span id="visibility-value">--</span>%</div>
+                <div class="metric-label" style="margin-top: 1rem;">Visibility: <span id="visibility-value">--</span>%</div>
             </div>
 
             <div class="card">
@@ -329,12 +423,12 @@
                 </div>
                 <div class="metric-value" id="temp-value">--</div>
                 <div class="metric-label">Celsius</div>
-                <div class="metric-label" style="margin-top: 0.5rem;" id="weather-desc">Loading...</div>
+                <div class="metric-label" style="margin-top: 1rem;" id="weather-desc">Loading...</div>
             </div>
         </div>
 
         <div class="locations-section">
-            <h2 class="section-title">📍 Best Viewing Locations</h2>
+            <h2 class="section-title">Best Viewing Locations</h2>
             <div class="locations-grid" id="locations-grid">
                 <!-- Locations will be loaded here -->
             </div>
@@ -354,14 +448,26 @@
             const kpValue = document.getElementById('kp-value');
             const visibilityValue = document.getElementById('visibility-value');
             const auroraStatus = document.getElementById('aurora-status');
+            const tonightProbability = document.getElementById('tonight-probability');
+            const bestViewingTime = document.getElementById('best-viewing-time');
             
             kpValue.textContent = data.kp_index.toFixed(1);
             visibilityValue.textContent = data.visibility_probability.toFixed(0);
             
+            if (data.tonight_probability !== undefined) {
+                tonightProbability.textContent = data.tonight_probability.toFixed(0) + '%';
+            }
+            
+            if (data.best_viewing_time) {
+                bestViewingTime.textContent = 'Best viewing time: ' + data.best_viewing_time;
+            } else {
+                bestViewingTime.textContent = 'Best viewing time: Not available';
+            }
+            
             auroraStatus.className = 'status-badge';
             if (data.kp_index >= 5) {
                 auroraStatus.classList.add('status-good');
-                auroraStatus.textContent = 'High Activity - Great viewing!';
+                auroraStatus.textContent = 'High Activity';
             } else if (data.kp_index >= 4) {
                 auroraStatus.classList.add('status-warning');
                 auroraStatus.textContent = 'Moderate Activity';
@@ -406,10 +512,10 @@
             const notification = document.createElement('div');
             notification.className = `notification ${data.type === 'cloud_warning' ? 'warning' : 'info'}`;
             notification.innerHTML = `
-                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: #f4f4f5;">
                     ${data.type === 'cloud_warning' ? '⚠️ Cloud Alert' : 'ℹ️ Update'}
                 </div>
-                <div style="font-size: 0.9rem;">${data.message}</div>
+                <div style="font-size: 0.9rem; color: #a1a1aa;">${data.message}</div>
             `;
             container.appendChild(notification);
             
@@ -430,16 +536,18 @@
                 .then(response => response.json())
                 .then(locations => {
                     const grid = document.getElementById('locations-grid');
-                    grid.innerHTML = locations.map(loc => `
+                    grid.innerHTML = locations.map((loc, index) => `
                         <div class="location-card">
+                            <div class="location-rank">#${index + 1}</div>
                             <div class="location-name">${loc.name}</div>
                             <div class="location-description">${loc.description}</div>
                             <div class="location-meta">
                                 <span class="meta-tag">⭐ ${loc.rating}/5</span>
-                                <span class="meta-tag">💡 ${loc.light_pollution} Light Pollution</span>
+                                <span class="meta-tag">💡 ${loc.light_pollution}</span>
+                                <span class="meta-tag">Score: ${loc.current_score || 'N/A'}</span>
                             </div>
                             <div class="location-directions">
-                                <span class="directions-label">🚗 Directions:</span>
+                                <span class="directions-label">Directions</span>
                                 ${loc.directions}
                             </div>
                         </div>
