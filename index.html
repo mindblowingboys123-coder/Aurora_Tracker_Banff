@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banff Aurora Tracker</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #a5b4fc, #c4b5fd, #f9a8d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .status-good {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .status-warning {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fbbf24;
+        }
+
+        .status-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .status-unknown {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        .locations-section {
+            margin-top: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #f1f5f9;
+        }
+
+        .locations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .location-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .location-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .location-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .location-description {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .location-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-tag {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .location-directions {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .directions-label {
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .notification-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .notification {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.warning {
+            border-left: 4px solid #fbbf24;
+        }
+
+        .notification.info {
+            border-left: 4px solid #60a5fa;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 2rem;
+        }
+
+        .loading {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .aurora-icon {
+            background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+        }
+
+        .cloud-icon {
+            background: linear-gradient(135deg, #60a5fa, #93c5fd);
+        }
+
+        .temp-icon {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .locations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .notification-container {
+                left: 1rem;
+                right: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌌 Banff Aurora Tracker</h1>
+            <p class="subtitle">Real-time aurora borealis monitoring for Banff National Park</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon aurora-icon">✨</div>
+                    <span class="card-title">Aurora Activity</span>
+                </div>
+                <div class="metric-value" id="kp-value">--</div>
+                <div class="metric-label">Kp Index</div>
+                <div id="aurora-status" class="status-badge status-unknown">Loading...</div>
+                <div class="metric-label" style="margin-top: 0.5rem;">Visibility: <span id="visibility-value">--</span>%</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon cloud-icon">☁️</div>
+                    <span class="card-title">Cloud Coverage</span>
+                </div>
+                <div class="metric-value" id="cloud-value">--</div>
+                <div class="metric-label">Percentage</div>
+                <div id="cloud-status" class="status-badge status-unknown">Loading...</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon temp-icon">🌡️</div>
+                    <span class="card-title">Temperature</span>
+                </div>
+                <div class="metric-value" id="temp-value">--</div>
+                <div class="metric-label">Celsius</div>
+                <div class="metric-label" style="margin-top: 0.5rem;" id="weather-desc">Loading...</div>
+            </div>
+        </div>
+
+        <div class="locations-section">
+            <h2 class="section-title">📍 Best Viewing Locations</h2>
+            <div class="locations-grid" id="locations-grid">
+                <!-- Locations will be loaded here -->
+            </div>
+        </div>
+
+        <div class="last-updated">
+            Last updated: <span id="last-updated">Loading...</span>
+        </div>
+    </div>
+
+    <div class="notification-container" id="notifications"></div>
+
+    <script>
+        const socket = io();
+        
+        function updateAuroraData(data) {
+            const kpValue = document.getElementById('kp-value');
+            const visibilityValue = document.getElementById('visibility-value');
+            const auroraStatus = document.getElementById('aurora-status');
+            
+            kpValue.textContent = data.kp_index.toFixed(1);
+            visibilityValue.textContent = data.visibility_probability.toFixed(0);
+            
+            auroraStatus.className = 'status-badge';
+            if (data.kp_index >= 5) {
+                auroraStatus.classList.add('status-good');
+                auroraStatus.textContent = 'High Activity - Great viewing!';
+            } else if (data.kp_index >= 4) {
+                auroraStatus.classList.add('status-warning');
+                auroraStatus.textContent = 'Moderate Activity';
+            } else if (data.kp_index >= 1) {
+                auroraStatus.classList.add('status-unknown');
+                auroraStatus.textContent = 'Low Activity';
+            } else {
+                auroraStatus.classList.add('status-unknown');
+                auroraStatus.textContent = 'No Activity';
+            }
+            
+            updateLastUpdated();
+        }
+        
+        function updateWeatherData(data) {
+            const cloudValue = document.getElementById('cloud-value');
+            const cloudStatus = document.getElementById('cloud-status');
+            const tempValue = document.getElementById('temp-value');
+            const weatherDesc = document.getElementById('weather-desc');
+            
+            cloudValue.textContent = data.cloud_coverage;
+            tempValue.textContent = data.temperature.toFixed(1);
+            weatherDesc.textContent = data.description;
+            
+            cloudStatus.className = 'status-badge';
+            if (data.cloud_coverage <= 30) {
+                cloudStatus.classList.add('status-good');
+                cloudStatus.textContent = 'Clear skies';
+            } else if (data.cloud_coverage <= 50) {
+                cloudStatus.classList.add('status-warning');
+                cloudStatus.textContent = 'Partly cloudy';
+            } else {
+                cloudStatus.classList.add('status-danger');
+                cloudStatus.textContent = 'Cloudy';
+            }
+            
+            updateLastUpdated();
+        }
+        
+        function showNotification(data) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = `notification ${data.type === 'cloud_warning' ? 'warning' : 'info'}`;
+            notification.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                    ${data.type === 'cloud_warning' ? '⚠️ Cloud Alert' : 'ℹ️ Update'}
+                </div>
+                <div style="font-size: 0.9rem;">${data.message}</div>
+            `;
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 10000);
+        }
+        
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = now.toLocaleTimeString();
+        }
+        
+        function loadLocations() {
+            fetch('/api/locations')
+                .then(response => response.json())
+                .then(locations => {
+                    const grid = document.getElementById('locations-grid');
+                    grid.innerHTML = locations.map(loc => `
+                        <div class="location-card">
+                            <div class="location-name">${loc.name}</div>
+                            <div class="location-description">${loc.description}</div>
+                            <div class="location-meta">
+                                <span class="meta-tag">⭐ ${loc.rating}/5</span>
+                                <span class="meta-tag">💡 ${loc.light_pollution} Light Pollution</span>
+                            </div>
+                            <div class="location-directions">
+                                <span class="directions-label">🚗 Directions:</span>
+                                ${loc.directions}
+                            </div>
+                        </div>
+                    `).join('');
+                });
+        }
+        
+        socket.on('aurora_update', updateAuroraData);
+        socket.on('weather_update', updateWeatherData);
+        socket.on('notification', showNotification);
+        
+        loadLocations();
+    </script>
+</body>
+</html>
