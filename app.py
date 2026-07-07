@@ -219,6 +219,5 @@ if __name__ == '__main__':
     # Start background monitoring thread
     monitor_thread = threading.Thread(target=background_monitor, daemon=True)
     monitor_thread.start()
-    
     port = int(os.environ.get('PORT', 5001))
     socketio.run(app, debug=False, host='0.0.0.0', port=port)
